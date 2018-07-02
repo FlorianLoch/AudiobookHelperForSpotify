@@ -1,0 +1,117 @@
+package ch.fdlo.audiobookhelperforspotify
+
+import android.content.Context
+import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
+import android.util.Log
+import android.view.View
+import android.widget.Button
+import android.widget.Toast
+import com.spotify.android.appremote.api.ConnectionParams;
+import com.spotify.android.appremote.api.Connector;
+import com.spotify.android.appremote.api.SpotifyAppRemote;
+
+import com.spotify.protocol.types.PlayerState;
+
+
+class MainActivity : AppCompatActivity() {
+
+    private val CLIENT_ID = getString(R.string.spotify_client_id)
+    private val REDIRECT_URI = "ch.fdlo.audiobookhelperforspotify://spotify_callback"
+    val connectionParams = ConnectionParams.Builder(CLIENT_ID)
+            .setRedirectUri(REDIRECT_URI)
+            .showAuthView(true)
+            .build()
+    private lateinit var spotifyRemote: SpotifyAppRemote
+    lateinit var currentPlayerState : PlayerState
+    lateinit var btnPlayPause : Button
+
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        btnPlayPause = findViewById(R.id.btn_play_pause)
+
+        btnPlayPause.isEnabled = false
+
+
+        SpotifyAppRemote.CONNECTOR.connect(this, connectionParams, object : Connector.ConnectionListener {
+                override fun onConnected(spotifyAppRemote: SpotifyAppRemote) {
+                    spotifyRemote = spotifyAppRemote
+                    Log.d("ABHfS", "Connected! Yay!")
+
+                    spotifyRemote.playerApi.playerState.setResultCallback(this@MainActivity::handlePlayerState)
+
+                    spotifyRemote.playerApi.subscribeToPlayerState().setEventCallback(this@MainActivity::handlePlayerState)
+                }
+
+                override fun onFailure(throwable: Throwable) {
+                    Log.e("ABHfS", throwable.message, throwable)
+
+                    btnPlayPause.isEnabled = false
+
+                    Toast.makeText(applicationContext, "Could not connect to Spotify!", Toast.LENGTH_LONG)
+                }
+            }
+        )
+
+        btnPlayPause.setOnClickListener(this::handlePausePlayButtonClick)
+    }
+
+    private fun handlePlayerState(state: PlayerState) {
+        Log.e("ABHfS", "PlayerState changed!")
+
+        btnPlayPause.text = resources.getString(
+            when (state.isPaused) {
+                true -> R.string.play
+                false -> R.string.pause
+        })
+
+        currentPlayerState = state
+
+        btnPlayPause.isEnabled = true
+    }
+
+    private fun handlePausePlayButtonClick(view: View) {
+        with (spotifyRemote.playerApi) {
+            playerState.setResultCallback {
+                if (it.isPaused) {
+                    val trackInformation = loadPosition()
+
+                    with (this) {
+                        play(trackInformation.trackURI).setResultCallback {
+                            seekTo(trackInformation.position)
+                        }
+                    }
+
+                    Log.d("ABHfS", "Try to continue track ${trackInformation.trackURI} at ${trackInformation.position}")
+                }
+                else {
+                    this.pause() // TODO handle result of this call
+
+                    storePosition(TrackInformation(it.track.uri, it.playbackPosition))
+
+                    Log.d("ABHfS", "Stopped track ${it.track.uri} at ${it.playbackPosition}")
+                }
+            }
+        }
+    }
+
+    private fun storePosition(trackInformation: TrackInformation) {
+        with (getPreferences(Context.MODE_PRIVATE).edit()) {
+            putString("trackURI", trackInformation.trackURI)
+            putLong("trackPosition", trackInformation.position)
+            apply()
+        }
+    }
+
+    private fun loadPosition(): TrackInformation {
+        with (getPreferences(Context.MODE_PRIVATE)) {
+            if (contains("trackURI").not()) {
+                throw Throwable("No position stored yet!")
+            }
+            return TrackInformation(this.getString("trackURI", ""), getLong("trackPosition", 0))
+        }
+    }
+}
