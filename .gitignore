@@ -75,3 +75,6 @@ fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
+
+app/libs/*
+app/src/main/res/values/secrets.xml
