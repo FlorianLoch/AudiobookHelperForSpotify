@@ -16,9 +16,9 @@ import ch.fdlo.audiobookhelperforspotify.dummy.DummyContent.DummyItem
 /**
  * A fragment representing a list of Items.
  * Activities containing this fragment MUST implement the
- * [PositionListItem.OnListFragmentInteractionListener] interface.
+ * [PositionListFragment.OnListFragmentInteractionListener] interface.
  */
-class PositionListItem : Fragment() {
+class PositionListFragment : Fragment() {
 
     // TODO: Customize parameters
     private var columnCount = 1
@@ -35,7 +35,7 @@ class PositionListItem : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?,
                               savedInstanceState: Bundle?): View? {
-        val view = inflater.inflate(R.layout.fragment_item_list, container, false)
+        val view = inflater.inflate(R.layout.fragment_position_list, container, false)
 
         // Set the adapter
         if (view is RecyclerView) {
@@ -44,7 +44,7 @@ class PositionListItem : Fragment() {
                     columnCount <= 1 -> LinearLayoutManager(context)
                     else -> GridLayoutManager(context, columnCount)
                 }
-                adapter = PositionListViewAdapter(DummyContent.ITEMS, listener)
+                adapter = PositionRecyclerViewAdapter(DummyContent.ITEMS, listener)
             }
         }
         return view
@@ -88,7 +88,7 @@ class PositionListItem : Fragment() {
         // TODO: Customize parameter initialization
         @JvmStatic
         fun newInstance(columnCount: Int) =
-                PositionListItem().apply {
+                PositionListFragment().apply {
                     arguments = Bundle().apply {
                         putInt(ARG_COLUMN_COUNT, columnCount)
                     }

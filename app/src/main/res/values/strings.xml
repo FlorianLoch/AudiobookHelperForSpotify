@@ -5,4 +5,7 @@
     <string name="title_notifications">Notifications</string>
     <string name="pause">⏸</string>
     <string name="play">▶️</string>
+    <string name="btn_store">Store</string>
+    <string name="btn_load">Load</string>
+    <string name="btn_delete">X</string>
 </resources>

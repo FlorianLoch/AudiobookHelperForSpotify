@@ -15,13 +15,8 @@ import com.spotify.protocol.types.PlayerState;
 
 
 class MainActivity : AppCompatActivity() {
-
-    private val CLIENT_ID = getString(R.string.spotify_client_id)
     private val REDIRECT_URI = "ch.fdlo.audiobookhelperforspotify://spotify_callback"
-    val connectionParams = ConnectionParams.Builder(CLIENT_ID)
-            .setRedirectUri(REDIRECT_URI)
-            .showAuthView(true)
-            .build()
+
     private lateinit var spotifyRemote: SpotifyAppRemote
     lateinit var currentPlayerState : PlayerState
     lateinit var btnPlayPause : Button
@@ -31,10 +26,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        btnPlayPause = findViewById(R.id.btn_play_pause)
+//        btnPlayPause = findViewById(R.id.btn_play_pause)
 
         btnPlayPause.isEnabled = false
 
+        val fragmentTransaction = supportFragmentManager.beginTransaction()
+        val fragment = PositionListFragment()
+        fragmentTransaction.add(R.id.fragment_placeholder, fragment)
+        fragmentTransaction.commit()
+
+        val connectionParams = ConnectionParams.Builder(getString(R.string.spotify_client_id))
+                .setRedirectUri(REDIRECT_URI)
+                .showAuthView(true)
+                .build()
+
+        Log.d("ABHfS", "Trying to connec to the Spotify app...")
 
         SpotifyAppRemote.CONNECTOR.connect(this, connectionParams, object : Connector.ConnectionListener {
                 override fun onConnected(spotifyAppRemote: SpotifyAppRemote) {
@@ -47,11 +53,13 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 override fun onFailure(throwable: Throwable) {
-                    Log.e("ABHfS", throwable.message, throwable)
+                    Log.e("ABHfS", "Could not connect to Spotify!", throwable)
 
                     btnPlayPause.isEnabled = false
 
                     Toast.makeText(applicationContext, "Could not connect to Spotify!", Toast.LENGTH_LONG)
+
+                    // Add better error handling, seems like it happends sometime that we cannot connect to the spotify app and restarting it helps...
                 }
             }
         )
@@ -90,7 +98,7 @@ class MainActivity : AppCompatActivity() {
                 else {
                     this.pause() // TODO handle result of this call
 
-                    storePosition(TrackInformation(it.track.uri, it.playbackPosition))
+                    storePosition(TrackInformation(it.track.uri, it.playbackPosition, ))
 
                     Log.d("ABHfS", "Stopped track ${it.track.uri} at ${it.playbackPosition}")
                 }
@@ -111,7 +119,7 @@ class MainActivity : AppCompatActivity() {
             if (contains("trackURI").not()) {
                 throw Throwable("No position stored yet!")
             }
-            return TrackInformation(this.getString("trackURI", ""), getLong("trackPosition", 0))
+            return TrackInformation(this.getString("trackURI", ""), getLong("trackPosition", 0), )
         }
     }
 }
