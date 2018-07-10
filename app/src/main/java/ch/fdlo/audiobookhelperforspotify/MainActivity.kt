@@ -12,6 +12,7 @@ import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
 
 import com.spotify.protocol.types.PlayerState;
+import kotlinx.android.synthetic.main.activity_main.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -26,14 +27,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-//        btnPlayPause = findViewById(R.id.btn_play_pause)
+        val spotifyController = SpotifyPlayerController.getInstance()
+        val gsonBackend = GsonBackend.getInstance()
+        val backend = PlayerStateBackend(spotifyController, gsonBackend, loadConfigFromDisk())
+        val listAdapter = PlayerStateRecyclerViewAdapter(backend)
+        backend.setOnChangeListener(listAdapter)
 
-        btnPlayPause.isEnabled = false
+        fab_add_current_state.setOnClickListener() {
+            backend.addCurrentPlayerState()
+        }
 
-        val fragmentTransaction = supportFragmentManager.beginTransaction()
-        val fragment = PositionListFragment()
-        fragmentTransaction.add(R.id.fragment_placeholder, fragment)
-        fragmentTransaction.commit()
+        rv_position_list.adapter = listAdapter
 
         val connectionParams = ConnectionParams.Builder(getString(R.string.spotify_client_id))
                 .setRedirectUri(REDIRECT_URI)

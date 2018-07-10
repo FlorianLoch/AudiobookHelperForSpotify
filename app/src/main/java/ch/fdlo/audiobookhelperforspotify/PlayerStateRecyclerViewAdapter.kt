@@ -5,9 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 
-
-import ch.fdlo.audiobookhelperforspotify.PositionListFragment.OnListFragmentInteractionListener
-
 import kotlinx.android.synthetic.main.fragment_position.view.*
 
 /**
@@ -15,9 +12,7 @@ import kotlinx.android.synthetic.main.fragment_position.view.*
  * specified [OnListFragmentInteractionListener].
  * TODO: Replace the implementation with code for your data type.
  */
-class PositionRecyclerViewAdapter(
-        private val positions: PlayerStateBackend)
-    : RecyclerView.Adapter<PositionRecyclerViewAdapter.ViewHolder>() {
+class PlayerStateRecyclerViewAdapter(private val positions: PlayerStateBackend) : RecyclerView.Adapter<PlayerStateRecyclerViewAdapter.ViewHolder>() {
 
     private val storeClickListener: View.OnClickListener
     private val loadClickListener: View.OnClickListener
@@ -47,34 +42,28 @@ class PositionRecyclerViewAdapter(
         val view = LayoutInflater.from(parent.context)
                 .inflate(R.layout.fragment_position, parent, false)
 
+        with(view) {
+            btn_store.setOnClickListener(storeClickListener)
+            btn_load.setOnClickListener(storeClickListener)
+            btn_delete.setOnClickListener(deleteClickListener)
+        }
+
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.setContent(position)
+        val trackInfo = positions[position]
 
-        with(holder.view) {
+        with (holder.view) {
             tag = position
+
+            tv_album.text = trackInfo.album
+            tv_track.text = trackInfo.trackName
+            tv_position.text = "${trackInfo.position} / ${trackInfo.duration}"
         }
     }
 
     override fun getItemCount(): Int = positions.size()
 
-    inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-        fun setContent(position: Int) {
-            val trackInfo = positions[position]
-
-            with (view) {
-                tag = position
-
-                tv_album.text = trackInfo.album
-                tv_track.text = trackInfo.trackName
-                tv_position.text = "${trackInfo.position} / ${trackInfo.duration}"
-
-                btn_store.setOnClickListener(storeClickListener)
-                btn_load.setOnClickListener(storeClickListener)
-                btn_delete.setOnClickListener(deleteClickListener)
-            }
-        }
-    }
+    inner class ViewHolder(val view: View) : RecyclerView.ViewHolder(view)
 }

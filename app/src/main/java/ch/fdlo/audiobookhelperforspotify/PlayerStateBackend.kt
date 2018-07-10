@@ -1,21 +1,27 @@
 package ch.fdlo.audiobookhelperforspotify
 
-import com.google.gson.Gson
+class PlayerStateBackend(private val playerControl: PlayerController, private val serializerDeserializer: SerializerDeserializer, serializedData: String) {
+    private val list: MutableList<PlayerState>
+    private lateinit var playerStateRecyclerViewAdapter: PlayerStateRecyclerViewAdapter
 
-class PlayerStateBackend(private val playerControl: PlayerController, private val serializerDeserializer: SerializerDeserializer) {
-    private val list = mutableListOf<PlayerState>()
-    private lateinit var positionRecyclerViewAdapter: PositionRecyclerViewAdapter
+    init {
+        val container = serializerDeserializer.deserialize(serializedData, PlayerStateSerializationContainer::class.java)
 
-    fun setOnChangeListener(positionRecyclerViewAdapter: PositionRecyclerViewAdapter) {
-        this.positionRecyclerViewAdapter = positionRecyclerViewAdapter
+        // Improve this, do some asserts or do not use gson?
+
+        list = container.playerStateList!!
+    }
+
+    fun setOnChangeListener(playerStateRecyclerViewAdapter: PlayerStateRecyclerViewAdapter) {
+        this.playerStateRecyclerViewAdapter = playerStateRecyclerViewAdapter
     }
 
     fun storePlayerState(index: Int) {
-        list[index] = getCurrentPlayerState()
+        list[index] = playerControl.suspendPlayerAndGetState()
     }
 
     fun restorePlayerState(index: Int) {
-
+        playerControl.resumePlayerAtState(list[index])
     }
 
     fun delete(index: Int) {
@@ -23,12 +29,12 @@ class PlayerStateBackend(private val playerControl: PlayerController, private va
 
         // TODO Add asserts (also in all other methods)
 
-        positionRecyclerViewAdapter.notifyItemRemoved(index)
+        playerStateRecyclerViewAdapter.notifyItemRemoved(index)
     }
 
     fun addCurrentPlayerState() {
         list.add(playerControl.suspendPlayerAndGetState())
-        positionRecyclerViewAdapter.notifyItemRangeInserted(list.size - 1, 1)
+        playerStateRecyclerViewAdapter.notifyItemRangeInserted(list.size - 1, 1)
     }
 
     fun size(): Int {
@@ -43,7 +49,7 @@ class PlayerStateBackend(private val playerControl: PlayerController, private va
         return serializerDeserializer.serialize(list)
     }
 
-    fun deserialize(s: String) {
-        list = serializerDeserializer.deserialize(s, ArrayList<PlayerState>.javaClass)
+    class PlayerStateSerializationContainer {
+        var playerStateList: MutableList<PlayerState>? = null
     }
 }
