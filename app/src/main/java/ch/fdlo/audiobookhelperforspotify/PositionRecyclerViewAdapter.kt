@@ -16,7 +16,7 @@ import kotlinx.android.synthetic.main.fragment_position.view.*
  * TODO: Replace the implementation with code for your data type.
  */
 class PositionRecyclerViewAdapter(
-        private val positions: TrackInformationStore)
+        private val positions: PlayerStateBackend)
     : RecyclerView.Adapter<PositionRecyclerViewAdapter.ViewHolder>() {
 
     private val storeClickListener: View.OnClickListener
@@ -31,11 +31,11 @@ class PositionRecyclerViewAdapter(
 
         storeClickListener = View.OnClickListener { v ->
             val position = v.tag as Int
-            positions.store(position)
+            positions.storePlayerState(position)
         }
         loadClickListener = View.OnClickListener { v ->
             val position = v.tag as Int
-            positions.load(position)
+            positions.restorePlayerState(position)
         }
         deleteClickListener = View.OnClickListener { v ->
             val position = v.tag as Int

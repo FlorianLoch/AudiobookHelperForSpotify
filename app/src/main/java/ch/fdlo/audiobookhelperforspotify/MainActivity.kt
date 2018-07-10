@@ -106,20 +106,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun storePosition(trackInformation: TrackInformation) {
+    private fun storePosition(playerState: PlayerState) {
         with (getPreferences(Context.MODE_PRIVATE).edit()) {
-            putString("trackURI", trackInformation.trackURI)
-            putLong("trackPosition", trackInformation.position)
+            putString("trackURI", playerState.trackURI)
+            putLong("trackPosition", playerState.position)
             apply()
         }
     }
 
-    private fun loadPosition(): TrackInformation {
+    private fun loadPosition(): PlayerState {
         with (getPreferences(Context.MODE_PRIVATE)) {
             if (contains("trackURI").not()) {
                 throw Throwable("No position stored yet!")
             }
-            return TrackInformation(this.getString("trackURI", ""), getLong("trackPosition", 0), )
+            return PlayerState(this.getString("trackURI", ""), getLong("trackPosition", 0), )
         }
     }
 }
