@@ -1,15 +1,11 @@
 package ch.fdlo.audiobookhelperforspotify
 
-class PlayerStateBackend(private val playerControl: PlayerController, private val serializerDeserializer: SerializerDeserializer, serializedData: String) {
+class PlayerStateBackend(private val playerControl: PlayerController, persistence: PlayerStatePersistence) {
     private val list: MutableList<PlayerState>
     private lateinit var playerStateRecyclerViewAdapter: PlayerStateRecyclerViewAdapter
 
     init {
-        val container = serializerDeserializer.deserialize(serializedData, PlayerStateSerializationContainer::class.java)
-
-        // Improve this, do some asserts or do not use gson?
-
-        list = container.playerStateList!!
+        list = persistence.playerStateList!!
     }
 
     fun setOnChangeListener(playerStateRecyclerViewAdapter: PlayerStateRecyclerViewAdapter) {
@@ -18,6 +14,7 @@ class PlayerStateBackend(private val playerControl: PlayerController, private va
 
     suspend fun storePlayerState(index: Int) {
         list[index] = playerControl.suspendPlayerAndGetState().await()
+        playerStateRecyclerViewAdapter.notifyItemChanged(index)
     }
 
     fun restorePlayerState(index: Int) {
@@ -43,16 +40,5 @@ class PlayerStateBackend(private val playerControl: PlayerController, private va
 
     operator fun get(index: Int): PlayerState {
         return list[index]
-    }
-
-    fun serialize(): String {
-        return serializerDeserializer.serialize(list)
-    }
-
-
-
-    class PlayerStateSerializationContainer {
-        var configVersion: Int? = null
-        var playerStateList: ArrayList<PlayerState>? = null
     }
 }
