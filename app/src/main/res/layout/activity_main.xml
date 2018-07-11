@@ -13,7 +13,7 @@
         android:id="@+id/rv_position_list"
         android:name="ch.fdlo.audiobookhelperforspotify.PositionListFragment"
         android:layout_width="match_parent"
-        android:layout_height="603dp"
+        android:layout_height="0dp"
         tools:context=".PositionListFragment"
         tools:layout_editor_absoluteX="0dp"
         tools:layout_editor_absoluteY="0dp"

@@ -8,4 +8,5 @@
     <string name="btn_store">Store</string>
     <string name="btn_load">Load</string>
     <string name="btn_delete">X</string>
+    <string name="config_key">ch.fdlo.audiobookhelperforspotify</string>
 </resources>

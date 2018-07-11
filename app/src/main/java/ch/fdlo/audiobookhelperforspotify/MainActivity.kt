@@ -1,59 +1,66 @@
 package ch.fdlo.audiobookhelperforspotify
 
 import android.content.Context
+import android.graphics.ColorSpace
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.Toast
-import com.spotify.android.appremote.api.ConnectionParams;
-import com.spotify.android.appremote.api.Connector;
-import com.spotify.android.appremote.api.SpotifyAppRemote;
+import com.spotify.android.appremote.api.ConnectionParams
+import com.spotify.android.appremote.api.Connector
+import com.spotify.android.appremote.api.SpotifyAppRemote
 
-import com.spotify.protocol.types.PlayerState;
+import com.spotify.protocol.types.PlayerState
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.async
 
 
 class MainActivity : AppCompatActivity() {
     private val REDIRECT_URI = "ch.fdlo.audiobookhelperforspotify://spotify_callback"
 
+    private val CONFIG_KEY = "ch.fdlo.audiobookhelperforspotify"
+
     private lateinit var spotifyRemote: SpotifyAppRemote
     lateinit var currentPlayerState : PlayerState
     lateinit var btnPlayPause : Button
+    var backend: PlayerStateBackend? = null // TODO Check what lateinit does resp. if it would improve things here
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        val spotifyController = SpotifyPlayerController.getInstance()
-        val gsonBackend = GsonBackend.getInstance()
-        val backend = PlayerStateBackend(spotifyController, gsonBackend, loadConfigFromDisk())
-        val listAdapter = PlayerStateRecyclerViewAdapter(backend)
-        backend.setOnChangeListener(listAdapter)
-
-        fab_add_current_state.setOnClickListener() {
-            backend.addCurrentPlayerState()
-        }
-
-        rv_position_list.adapter = listAdapter
+        rv_position_list.isEnabled = false
+        fab_add_current_state.isEnabled = false
 
         val connectionParams = ConnectionParams.Builder(getString(R.string.spotify_client_id))
                 .setRedirectUri(REDIRECT_URI)
                 .showAuthView(true)
                 .build()
 
-        Log.d("ABHfS", "Trying to connec to the Spotify app...")
+        Log.d("ABHfS", "Trying to connect to the Spotify app...")
 
         SpotifyAppRemote.CONNECTOR.connect(this, connectionParams, object : Connector.ConnectionListener {
                 override fun onConnected(spotifyAppRemote: SpotifyAppRemote) {
-                    spotifyRemote = spotifyAppRemote
                     Log.d("ABHfS", "Connected! Yay!")
 
-                    spotifyRemote.playerApi.playerState.setResultCallback(this@MainActivity::handlePlayerState)
+                    val spotifyController = SpotifyPlayerController(spotifyAppRemote)
+                    val gsonBackend = GsonBackend.getInstance()
+                    backend = PlayerStateBackend(spotifyController, gsonBackend, loadConfigFromDisk())
+                    val listAdapter = PlayerStateRecyclerViewAdapter(backend!!)
+                    backend!!.setOnChangeListener(listAdapter)
 
-                    spotifyRemote.playerApi.subscribeToPlayerState().setEventCallback(this@MainActivity::handlePlayerState)
+                    fab_add_current_state.isEnabled = true
+                    fab_add_current_state.setOnClickListener() {
+                        async(UI) {
+                            // TODO Add a spinner or some other animation
+                            backend!!.addCurrentPlayerState()
+                        }
+                    }
+
+                    rv_position_list.adapter = listAdapter
                 }
 
                 override fun onFailure(throwable: Throwable) {
@@ -61,18 +68,26 @@ class MainActivity : AppCompatActivity() {
 
                     btnPlayPause.isEnabled = false
 
-                    Toast.makeText(applicationContext, "Could not connect to Spotify!", Toast.LENGTH_LONG)
+                    Toast.makeText(applicationContext, "Could not connect to Spotify!", Toast.LENGTH_LONG).show()
 
                     // Add better error handling, seems like it happends sometime that we cannot connect to the spotify app and restarting it helps...
                 }
             }
         )
+    }
 
-        btnPlayPause.setOnClickListener(this::handlePausePlayButtonClick)
+    override fun onPause() {
+        super.onPause()
+
+        if (backend == null) {
+            return
+        }
+
+        writeConfigToDisk(backend!!.serialize())
     }
 
     private fun handlePlayerState(state: PlayerState) {
-        Log.e("ABHfS", "PlayerState changed!")
+        Log.d("ABHfS", "PlayerState changed!")
 
         btnPlayPause.text = resources.getString(
             when (state.isPaused) {
@@ -85,45 +100,20 @@ class MainActivity : AppCompatActivity() {
         btnPlayPause.isEnabled = true
     }
 
-    private fun handlePausePlayButtonClick(view: View) {
-        with (spotifyRemote.playerApi) {
-            playerState.setResultCallback {
-                if (it.isPaused) {
-                    val trackInformation = loadPosition()
-
-                    with (this) {
-                        play(trackInformation.trackURI).setResultCallback {
-                            seekTo(trackInformation.position)
-                        }
-                    }
-
-                    Log.d("ABHfS", "Try to continue track ${trackInformation.trackURI} at ${trackInformation.position}")
-                }
-                else {
-                    this.pause() // TODO handle result of this call
-
-                    storePosition(TrackInformation(it.track.uri, it.playbackPosition, ))
-
-                    Log.d("ABHfS", "Stopped track ${it.track.uri} at ${it.playbackPosition}")
-                }
-            }
-        }
-    }
-
-    private fun storePosition(playerState: PlayerState) {
+    private fun writeConfigToDisk(serializedState: String) {
         with (getPreferences(Context.MODE_PRIVATE).edit()) {
-            putString("trackURI", playerState.trackURI)
-            putLong("trackPosition", playerState.position)
+            putString(CONFIG_KEY, serializedState)
             apply()
         }
     }
 
-    private fun loadPosition(): PlayerState {
+    private fun loadConfigFromDisk(): String {
         with (getPreferences(Context.MODE_PRIVATE)) {
-            if (contains("trackURI").not()) {
-                throw Throwable("No position stored yet!")
+            if (contains(CONFIG_KEY).not()) {
+                Log.d("ABHfS", "No configuration stored yet! First run of the app?")
             }
-            return PlayerState(this.getString("trackURI", ""), getLong("trackPosition", 0), )
+
+            return getString(CONFIG_KEY, "")
         }
     }
 }

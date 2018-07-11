@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 
 import kotlinx.android.synthetic.main.fragment_position.view.*
+import kotlinx.coroutines.experimental.async
 
 /**
  * [RecyclerView.Adapter] that can display a [DummyItem] and makes a call to the
@@ -18,23 +19,25 @@ class PlayerStateRecyclerViewAdapter(private val positions: PlayerStateBackend) 
     private val loadClickListener: View.OnClickListener
     private val deleteClickListener: View.OnClickListener
 
-
     init {
         notifyDataSetChanged()
 
         positions.setOnChangeListener(this)
 
         storeClickListener = View.OnClickListener { v ->
-            val position = v.tag as Int
-            positions.storePlayerState(position)
+            val index = v.tag as Int
+            async {
+                // TODO Add spinner etc.
+                positions.storePlayerState(index)
+            }
         }
         loadClickListener = View.OnClickListener { v ->
-            val position = v.tag as Int
-            positions.restorePlayerState(position)
+            val index = v.tag as Int
+            positions.restorePlayerState(index)
         }
         deleteClickListener = View.OnClickListener { v ->
-            val position = v.tag as Int
-            positions.delete(position)
+            val index = v.tag as Int
+            positions.delete(index)
         }
     }
 

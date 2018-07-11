@@ -16,8 +16,8 @@ class PlayerStateBackend(private val playerControl: PlayerController, private va
         this.playerStateRecyclerViewAdapter = playerStateRecyclerViewAdapter
     }
 
-    fun storePlayerState(index: Int) {
-        list[index] = playerControl.suspendPlayerAndGetState()
+    suspend fun storePlayerState(index: Int) {
+        list[index] = playerControl.suspendPlayerAndGetState().await()
     }
 
     fun restorePlayerState(index: Int) {
@@ -32,8 +32,8 @@ class PlayerStateBackend(private val playerControl: PlayerController, private va
         playerStateRecyclerViewAdapter.notifyItemRemoved(index)
     }
 
-    fun addCurrentPlayerState() {
-        list.add(playerControl.suspendPlayerAndGetState())
+    suspend fun addCurrentPlayerState() {
+        list.add(playerControl.suspendPlayerAndGetState().await())
         playerStateRecyclerViewAdapter.notifyItemRangeInserted(list.size - 1, 1)
     }
 
@@ -49,7 +49,10 @@ class PlayerStateBackend(private val playerControl: PlayerController, private va
         return serializerDeserializer.serialize(list)
     }
 
+
+
     class PlayerStateSerializationContainer {
-        var playerStateList: MutableList<PlayerState>? = null
+        var configVersion: Int? = null
+        var playerStateList: ArrayList<PlayerState>? = null
     }
 }
