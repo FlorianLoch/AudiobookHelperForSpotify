@@ -14,7 +14,7 @@ import kotlinx.coroutines.experimental.async
  * specified [OnListFragmentInteractionListener].
  * TODO: Replace the implementation with code for your data type.
  */
-class PlayerStateRecyclerViewAdapter(private val playerStates: PlayerStateBackend) : RecyclerView.Adapter<PlayerStateRecyclerViewAdapter.ViewHolder>() {
+class PlayerStateRecyclerViewAdapter(private val playerStates: PlayerStateBackend, private val albumArtCache: AlbumArtCache) : RecyclerView.Adapter<PlayerStateRecyclerViewAdapter.ViewHolder>() {
 
     private val storeClickListener: View.OnClickListener
     private val loadClickListener: View.OnClickListener
@@ -28,8 +28,6 @@ class PlayerStateRecyclerViewAdapter(private val playerStates: PlayerStateBacken
     }
 
     init {
-        notifyDataSetChanged()
-
         playerStates.setOnChangeListener(this)
 
         storeClickListener = View.OnClickListener { v ->
@@ -62,14 +60,32 @@ class PlayerStateRecyclerViewAdapter(private val playerStates: PlayerStateBacken
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val trackInfo = playerStates[position]
+        val playerState = playerStates[position]
 
         with (holder.view) {
             tag = position
 
-            tv_album.text = trackInfo.album
-            tv_track.text = trackInfo.trackName
-            tv_position.text = "${formatTime(trackInfo.position)} / ${formatTime(trackInfo.duration)}"
+            tv_album.text = playerState.album
+            tv_track.text = playerState.trackName
+            tv_position.text = "${formatTime(playerState.position)} / ${formatTime(playerState.duration)}"
+            img_cover.tag = playerState.coverURI
+
+            async(UI) {
+                val albumArtBitmap = albumArtCache.fetchCoverForAlbum(playerState.coverURI).await()
+
+                // Check whether a new PlayerState has been assigned to the (recycable) view since we started fetching this album art
+                // Due to race conditions (differing download times etc.) this could otherwise lead to wrongly assigned cover images
+                // This check only assures the same albumURI, but as this one is unique it should regard to the same cover art so the
+                // mistake would not become visible.
+                // If the assigned album changed we simply do nothing and wait for the right image to be fetched (or leave it unchanged in
+                // case it already loaded)
+                // TODO Update this text
+                synchronized(this@PlayerStateRecyclerViewAdapter) {
+                    if (playerState.coverURI == img_cover.tag) {
+                        img_cover.setImageBitmap(albumArtBitmap)
+                    }
+                }
+            }
         }
     }
 

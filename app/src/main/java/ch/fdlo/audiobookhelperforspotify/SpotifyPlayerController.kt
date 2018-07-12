@@ -17,6 +17,8 @@ class SpotifyPlayerController(private val spotifyRemote: SpotifyAppRemote) : Pla
 
                 val state = PlayerState.fromSpotifyPlayerState(it)
 
+                it.track.imageUri
+
                 promise.complete(state)
             }
             setErrorCallback {
@@ -51,6 +53,8 @@ class SpotifyPlayerController(private val spotifyRemote: SpotifyAppRemote) : Pla
                 }
             }
         }
+
+
 
         return promise
     }

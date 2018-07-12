@@ -1,19 +1,16 @@
 package ch.fdlo.audiobookhelperforspotify
 
-import android.content.Context
-import android.graphics.ColorSpace
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import android.view.View
-import android.widget.Button
+import android.util.TypedValue
 import android.widget.Toast
 import com.spotify.android.appremote.api.ConnectionParams
 import com.spotify.android.appremote.api.Connector
 import com.spotify.android.appremote.api.SpotifyAppRemote
 
-import com.spotify.protocol.types.PlayerState
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.inc_progress_overlay.*
 import kotlinx.coroutines.experimental.android.UI
 import kotlinx.coroutines.experimental.async
 
@@ -28,6 +25,9 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        fadeInView(progress_overlay)
+
         rv_position_list.isEnabled = false
 
         persistence = PlayerStatePersistence.load(this)
@@ -44,21 +44,27 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        val preferredImageSize = Math.round(TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 120f, resources.displayMetrics))
         val connectionParams = ConnectionParams.Builder("b68c9b6c29464768bed65249bd3204b0")
                 .setRedirectUri(REDIRECT_URI)
+                .setPreferredImageSize(preferredImageSize)
+                .setPreferredThumbnailImageSize(preferredImageSize)
                 .showAuthView(true)
                 .build()
 
         Log.d("ABHfS", "Trying to connect to the Spotify app...")
 
         SpotifyAppRemote.CONNECTOR.connect(this, connectionParams, object : Connector.ConnectionListener {
-                override fun onConnected(spotifyAppRemote: SpotifyAppRemote) {
+                override fun onConnected(spotifyRemote: SpotifyAppRemote) {
+                    fadeOutView(progress_overlay)
+
                     Log.d("ABHfS", "Connected! Yay!")
 
                     try {
-                        val spotifyController = SpotifyPlayerController(spotifyAppRemote)
+                        val spotifyController = SpotifyPlayerController(spotifyRemote)
+                        val albumArtCache = AlbumArtCache(this@MainActivity, spotifyRemote)
                         backend = PlayerStateBackend(spotifyController, persistence)
-                        val listAdapter = PlayerStateRecyclerViewAdapter(backend!!)
+                        val listAdapter = PlayerStateRecyclerViewAdapter(backend!!, albumArtCache)
                         backend!!.setOnChangeListener(listAdapter)
 
 
