@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
 
         fadeInView(progress_overlay)
 
-        rv_position_list.isEnabled = false
+        rv_player_states.isEnabled = false
 
         persistence = PlayerStatePersistence.load(this)
 
@@ -67,8 +67,7 @@ class MainActivity : AppCompatActivity() {
                         val listAdapter = PlayerStateRecyclerViewAdapter(backend!!, albumArtCache)
                         backend!!.setOnChangeListener(listAdapter)
 
-
-                        rv_position_list.adapter = listAdapter
+                        rv_player_states.adapter = listAdapter
                     } catch (e: Throwable) {
                         Toast.makeText(applicationContext, "Could not initialize backend!", Toast.LENGTH_LONG).show()
                         Log.e("ABHfS", "Could not initialize backend!", e)

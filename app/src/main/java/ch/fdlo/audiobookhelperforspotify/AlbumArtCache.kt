@@ -3,7 +3,6 @@ package ch.fdlo.audiobookhelperforspotify
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.util.Base64
 import android.util.Log
 import com.spotify.android.appremote.api.SpotifyAppRemote
@@ -22,6 +21,9 @@ class AlbumArtCache(private val ctx: Context, private val spotifyRemote: Spotify
 
         if (cacheFile.exists()) {
             val bitmap = BitmapFactory.decodeFile(cacheFile.absolutePath)
+
+            Log.d("ABHfS", "Successfully read album art ($imageURI) from cache (${cacheFile.absolutePath})!")
+
             promise.complete(bitmap)
         }
         else {
