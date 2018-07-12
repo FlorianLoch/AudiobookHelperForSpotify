@@ -13,9 +13,14 @@ import kotlinx.coroutines.experimental.async
 class PlayerStateRecyclerViewAdapter(private val playerStatesBackend: PlayerStateBackend, private val albumArtCache: AlbumArtCache) : RecyclerView.Adapter<PlayerStateRecyclerViewAdapter.ViewHolder>() {
 
     companion object {
-        // TODO Enhance this function to show minutes and seconds
-        fun formatTime(millis: Long): Int {
-            return Math.floorDiv(millis, 1000.toLong()).toInt()
+        fun formatTime(millis: Long): String {
+            val inSecs = millis / 1000
+            val hours = Math.floorDiv(inSecs, 3600.toLong()).toInt()
+            val remaining = inSecs - hours * 3600
+            val minutes = Math.floorDiv(inSecs - hours * 3600, 60.toLong()).toInt()
+            val seconds = remaining - minutes * 60
+
+            return "${if (hours > 0) "$hours:" else ""}${if (minutes < 10) "0" else ""}$minutes:${if (seconds < 10) "0" else ""}$seconds"
         }
     }
 
@@ -51,8 +56,9 @@ class PlayerStateRecyclerViewAdapter(private val playerStatesBackend: PlayerStat
         val playerState = playerStatesBackend[position]
 
         with (holder.view) {
-            tv_album.text = playerState.album
             tv_track.text = playerState.trackName
+            tv_album.text = playerState.album
+            tv_artist.text = playerState.artist
             tv_position.text = "${formatTime(playerState.position)} / ${formatTime(playerState.duration)}"
             img_cover.tag = playerState.coverURI
 
