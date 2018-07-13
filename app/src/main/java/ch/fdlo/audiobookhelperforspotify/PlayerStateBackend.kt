@@ -1,5 +1,8 @@
 package ch.fdlo.audiobookhelperforspotify
 
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.async
+
 class PlayerStateBackend(private val playerControl: PlayerController, persistence: PlayerStatePersistence) {
     private val list: MutableList<PlayerState>
     private lateinit var playerStateRecyclerViewAdapter: PlayerStateRecyclerViewAdapter
@@ -18,7 +21,9 @@ class PlayerStateBackend(private val playerControl: PlayerController, persistenc
     }
 
     fun restorePlayerState(index: Int) {
-        playerControl.resumePlayerAtState(list[index])
+        async(UI) {
+            playerControl.resumePlayerAtState(list[index])
+        }
     }
 
     fun delete(index: Int) {
